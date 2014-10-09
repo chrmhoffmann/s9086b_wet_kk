@@ -1,16 +1,3 @@
-/* 
- * Author: yucong xiong <yucong.xion@mediatek.com>
- *
- * This software is licensed under the terms of the GNU General Public
- * License version 2, as published by the Free Software Foundation, and
- * may be copied, distributed, and modified under those terms.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- */
 #include <linux/interrupt.h>
 #include <linux/i2c.h>
 #include <linux/slab.h>
@@ -24,8 +11,6 @@
 #include <linux/earlysuspend.h>
 #include <linux/platform_device.h>
 #include <asm/atomic.h>
-
-//#include <mach/mt_devs.h>
 #include <mach/mt_typedefs.h>
 #include <mach/mt_gpio.h>
 #include <mach/mt_pm_ldo.h>
@@ -56,16 +41,6 @@
 //Ivan
 #define ALS_QUEUE_LEN	3
 
-#define TINNO_PS_STARTUP_IRQ	//Ivan
-
-//Ivan
-#ifdef TINNO_PS_STARTUP_IRQ	
-static struct delayed_work ps_startup_irq_work;
-static struct workqueue_struct * ps_startup_irq_workqueue = NULL;
-static void ps_startup_irq_func(struct work_struct *);
-#define STARTUP_IRQ_DELAY 10
-#endif
-
 /******************************************************************************
 * extern functions 
 *******************************************************************************/
@@ -76,8 +51,8 @@ static void ps_startup_irq_func(struct work_struct *);
 		extern void mt_eint_set_hw_debounce(unsigned int eint_num, unsigned int ms);
 		extern unsigned int mt_eint_set_sens(unsigned int eint_num, unsigned int sens);
 		extern void mt65xx_eint_registration(unsigned int eint_num, unsigned int is_deb_en, unsigned int pol, void (EINT_FUNC_PTR)(void), unsigned int is_auto_umask);
-		//extern void mt_eint_soft_set(unsigned int eint_num);
-		//extern void mt_eint_soft_clr(unsigned int eint_num);
+		extern void mt_eint_soft_set(unsigned int eint_num);
+		extern void mt_eint_soft_clr(unsigned int eint_num);
 
 /*----------------------------------------------------------------------------*/
 static int ap3220_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id); 
@@ -111,10 +86,8 @@ struct ap3220_priv {
 	
 	
 	/*data*/
-//Ivan	u8			als;
 	u16			als;
 	u16 			ps;
-//	u8			_align;
 	u16			als_level_num;
 	u16			als_value_num;
 	u32			als_level[C_CUST_ALS_LEVEL-1];
@@ -165,14 +138,8 @@ static struct ap3220_priv *g_ap3220_ptr = NULL;
 static struct ap3220_priv *ap3220_obj = NULL;
 static struct platform_driver ap3220_alsps_driver;
 static struct PS_CALI_DATA_STRUCT ps_cali={0,0,0};
-//Ivan added
 static u16 g_als_value_queue[ALS_QUEUE_LEN]={0,0,0};
 static u16 g_als_value_previous = 0;
-//Ivan added
-#ifdef TINNO_PS_STARTUP_IRQ	
-static int g_emu_int = 0;
-static int g_first_int = 0;
-#endif
 /*----------------------------------------------------------------------------*/
 
 
@@ -193,18 +160,6 @@ typedef enum {
     CMC_TRC_DEBUG   = 0x8000,
 } CMC_TRC;
 
-
-#ifdef TINNO_PS_STARTUP_IRQ	
-static void ps_startup_irq_func(struct work_struct *work)
-{   
-    if (g_emu_int == 0)
-    {
-	//mt_eint_soft_set(CUST_EINT_ALS_NUM);
-	APS_ERR("debug ps_startup_irq_func!");	
-	g_emu_int = 1;
-    }
-}
-#endif
 /* 
  * #########
  * ## I2C ##
@@ -224,17 +179,12 @@ static int ap3220_i2c_read_reg(u8 regnum, u8* data)
 	res = i2c_master_send(ap3220_i2c_client, buffer, 0x101);
 	ap3220_i2c_client->addr &=I2C_MASK_FLAG;
 	
-//	res = i2c_master_send(ap3220_i2c_client, buffer, 0x1);
 	if(res < 0)
 	{
 		APS_ERR("ap3220_i2c_read_reg ERROR!!!\n");	    
 		return res;
 	}
-//	res = i2c_master_recv(ap3220_i2c_client, reg_value, 0x1);
-//	if(res <= 0)
-//	{
-//		return res;
-//	}
+
 	*data = buffer[0];
 	return buffer[0];
 }
@@ -316,10 +266,7 @@ int ap3220_enable_ps(struct i2c_client *client, int enable)
 			}
 			
 			atomic_set(&obj->ps_deb_on, 1);
-			atomic_set(&obj->ps_deb_end, jiffies+atomic_read(&obj->ps_debounce)/(1000/HZ));
-#ifdef TINNO_PS_STARTUP_IRQ						
-			g_first_int = 0;
-#endif			
+			atomic_set(&obj->ps_deb_end, jiffies+atomic_read(&obj->ps_debounce)/(1000/HZ));		
 		}
 	else{
 			APS_LOG("ap3220_enable_ps disable_ps\n");
@@ -405,7 +352,6 @@ long ap3220_read_ps(struct i2c_client *client, u16 *data)
 	u8 ps_l, ps_h;
 	u16 ps_val;
 	
-//	APS_FUN(f);
 	res = ap3220_i2c_read_reg(AP3220_REG_SYS_PS_DATA_LOW,&databuf[0]);
 	res = ap3220_i2c_read_reg(AP3220_REG_SYS_PS_DATA_HIGH,&databuf[1]);
 	if(res < 0)
@@ -414,13 +360,11 @@ long ap3220_read_ps(struct i2c_client *client, u16 *data)
 		goto READ_PS_EXIT_ERR;
 	}
 	
-//	APS_LOG("AP3220_REG_PS_DATA value value_low = %x, value_high = %x\n",databuf[0],databuf[1]);
 	*data = ((databuf[1]<<8)|databuf[0]);
 	
 	ps_l = *data & 0x00FF;
 	ps_h = *data >> 8;
 	ps_val = ps_h << 2 | ps_l & 0x03;
-//Ivan
 	printk("ALSPS Ivan ps_val = %x \n",ps_val);
 	
 	APS_LOG("ALSPS Ivan AP3220_REG_PS_DATA value %d\n",*data);	
@@ -432,9 +376,7 @@ READ_PS_EXIT_ERR:
 long ap3220_read_als(struct i2c_client *client, u16 *data)
 {
 	long res;
-	u8 databuf[2];
-//	APS_FUN(f);
-	
+	u8 databuf[2];	
 	res = ap3220_i2c_read_reg(AP3220_REG_SYS_ALS_DATA_LOW,&databuf[0]);
 	res = ap3220_i2c_read_reg(AP3220_REG_SYS_ALS_DATA_HIGH,&databuf[1]);
 	if(res < 0)
@@ -442,11 +384,7 @@ long ap3220_read_als(struct i2c_client *client, u16 *data)
 		APS_ERR("i2c_master_send function err\n");
 		goto READ_ALS_EXIT_ERR;
 	}
-	
-//	APS_LOG("AP3220_REG_ALS_DATA value value_low = %x, value_high = %x\n",databuf[0],databuf[1]);
 	*data = ((databuf[1]<<8)|databuf[0]);
-//	APS_LOG("AP3220_REG_ALS_DATA value %d\n",*data);
-	
 	return 0;
 READ_ALS_EXIT_ERR:
 	return res;
@@ -529,7 +467,6 @@ static int ap3220_get_als_value(struct ap3220_priv *obj, u16 als)
 		int idx;
 		int invalid = 0;
 		u32 als_sum;
-//Ivan added SW LOW PASS FILTER
 		als_sum = 0;
 		
 		for (idx = 0; idx < (ALS_QUEUE_LEN - 1); idx++)
@@ -543,8 +480,6 @@ static int ap3220_get_als_value(struct ap3220_priv *obj, u16 als)
 		    als_sum = 3;
 		else
 		    als_sum /= 3;
-		
-//		APS_LOG("AP3220_REG_ALS_DATA sum value %d\n",als_sum);
 		
 		
 		for(idx = 0; idx < obj->als_level_num; idx++)
@@ -580,8 +515,7 @@ static int ap3220_get_als_value(struct ap3220_priv *obj, u16 als)
 			{
 				APS_DBG("ALS: %05d => %05d\n", als, obj->hw->als_value[idx]);
 			}
-			return obj->hw->als_value[idx];
-//			return als/10;			
+			return obj->hw->als_value[idx];		
 		}
 		else
 		{
@@ -986,8 +920,6 @@ static int ap3220_check_intr(struct i2c_client *client)
 		APS_ERR("i2c_master_send function err\n");
 		goto EXIT_ERR;
 	}
-//	APS_LOG("AP3220_REG_INT_FLAG value = %x\n",intr_status);	
-//Ivan ALS INT should not happen!!! Just in case...we need to clear the INT pin		
 	if (intr_status & AP3220_SYSTEM_ALS_INT_TRIGGER)
 	{
 	    res = ap3220_i2c_read_reg(AP3220_REG_SYS_ALS_DATA_LOW,&databuf[0]);
@@ -996,18 +928,13 @@ static int ap3220_check_intr(struct i2c_client *client)
 	    if(res < 0)
 	    {
 		    APS_ERR("i2c_master_send function err\n");
-//		    goto EXIT_ERR;
 	    }
-	    
-//thrown away the data????	    
+	        
 	}	
 	if (intr_status & AP3220_SYSTEM_PS_INT_TRIGGER)
 	{
 	    res = ap3220_i2c_read_reg(AP3220_REG_SYS_PS_DATA_LOW,&databuf[0]);
 	    res = ap3220_i2c_read_reg(AP3220_REG_SYS_PS_DATA_HIGH,&databuf[1]);
-//To be removed	    
-//	    APS_ERR("Ivan ap3220_check_intr PS0= %x \n", databuf[0]);
-//	    APS_ERR("Ivan ap3220_check_intr PS1 = %x \n", databuf[1]);
 	    
 	    if(res < 0)
 	    {
@@ -1024,13 +951,9 @@ static int ap3220_check_intr(struct i2c_client *client)
 	    else
 	    {
 		intr_flag = 1;//for away
-//		res = -1;		
-//		goto EXIT_ERR;
 	    }
 	    ret = 1;
 	}
-
-//	APS_LOG("AP3220_REG_INT_FLAG value value_low = %x, value_high = %x\n",databuf[0],databuf[1]);
 	
 	return ret;
 EXIT_ERR:
@@ -1043,7 +966,6 @@ static void ap3220_eint_work(struct work_struct *work)
 	struct ap3220_priv *obj = (struct ap3220_priv *)container_of(work, struct ap3220_priv, eint_work);
 	hwm_sensor_data sensor_data;
 	int res = 0;
-	//res = ap3220_check_intr(obj->client);
 
 #if 1
 	res = ap3220_check_intr(obj->client);
@@ -1053,21 +975,6 @@ static void ap3220_eint_work(struct work_struct *work)
 		sensor_data.values[0] = intr_flag;
 		sensor_data.value_divide = 1;
 		sensor_data.status = SENSOR_STATUS_ACCURACY_MEDIUM;	
-#ifdef TINNO_PS_STARTUP_IRQ			
-		if (g_emu_int)
-		{
-		    g_emu_int = 0;
-		    //mt_eint_soft_clr(CUST_EINT_ALS_NUM);
-		    if (g_first_int == 0)
-		    {
-			intr_flag = 1;
-			sensor_data.values[0] = intr_flag;
-		    }
-		    g_first_int = 1;
-		}
-		if (res >= 1)
-		    g_first_int = 1;
-#endif		
 	}
 	APS_LOG("AP3220_eint_work intr_flag = %x\n",intr_flag);		
 	if((res = hwmsen_get_interrupt_data(ID_PROXIMITY, &sensor_data)))
@@ -1090,9 +997,6 @@ static void ap3220_eint_func(void)
 	{
 		return;
 	}	
-//	APS_ERR("debug ap3220_eint_func!");
-//Ivan	
-	if (g_emu_int == 1)
 	    mt_eint_mask(CUST_EINT_ALS_NUM);	
 	schedule_work(&obj->eint_work);
 }
@@ -1393,8 +1297,6 @@ static int ap3220_init_client(struct i2c_client *client)
 	u8 data, data2, data3;
 	int res = 0;
 	u16 tmp_data;
-//ALS Range, 0 ~ 65536
-//ALS PERSIST	
 	data = (AP3220_ALS_SETTING_RANGE_16383 << AP3220_ALS_RANGE_SHIFT) & AP3220_ALS_RANGE_MASK;
 	data2 = (AP3220_ALS_SETTING_PERSIST_1 << AP3220_ALS_PERSIST_SHIFT) & AP3220_ALS_PERSIST_MASK;
 	data |= data2;
@@ -1617,10 +1519,7 @@ long ap3220_ps_operate(void* self, uint32_t command, void* buff_in, int size_in,
 							return -1;
 						}
 						set_bit(CMC_BIT_PS, &obj->enable);
-//Ivan
-#ifdef TINNO_PS_STARTUP_IRQ
-						queue_delayed_work(ps_startup_irq_workqueue, &ps_startup_irq_work,STARTUP_IRQ_DELAY);
-#endif						
+						
 					}
 					else
 					{
@@ -1674,7 +1573,6 @@ long ap3220_als_operate(void* self, uint32_t command, void* buff_in, int size_in
 		int value;
 		hwm_sensor_data* sensor_data;
 		struct ap3220_priv *obj = (struct ap3220_priv *)self;
-//		APS_FUN(f);
 		switch (command)
 		{
 			case SENSOR_DELAY:
@@ -1719,7 +1617,6 @@ long ap3220_als_operate(void* self, uint32_t command, void* buff_in, int size_in
 				break;
 	
 			case SENSOR_GET_DATA:
-//				APS_ERR("ap3220 als get data command!\n");
 				if((buff_out == NULL) || (size_out< sizeof(hwm_sensor_data)))
 				{
 					APS_ERR("get sensor data parameter error!\n");
@@ -1854,13 +1751,6 @@ static int ap3220_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	register_early_suspend(&obj->early_drv);
 	#endif
 
-#ifdef TINNO_PS_STARTUP_IRQ
-	ps_startup_irq_workqueue = create_workqueue("ps_startup_irq");
-	
-	INIT_DELAYED_WORK(&ps_startup_irq_work, ps_startup_irq_func);
-	
-//	queue_delayed_work(ps_startup_irq_workqueue, &ps_startup_irq_work,STARTUP_IRQ_DELAY);
-#endif
 	APS_LOG("%s: OK\n", __func__);
 	return 0;
 
@@ -1944,9 +1834,9 @@ static int ap3220_remove(struct platform_device *pdev)
 	
 	i2c_del_driver(&ap3220_i2c_driver);
 	
-#ifdef TINNO_PS_STARTUP_IRQ
-	destroy_workqueue(ps_startup_irq_workqueue);
-#endif
+//#ifdef TINNO_PS_STARTUP_IRQ
+//	destroy_workqueue(ps_startup_irq_workqueue);
+//#endif
 	return 0;
 }
 
