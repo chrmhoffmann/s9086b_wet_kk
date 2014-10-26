@@ -9,3 +9,6 @@ cd /s9086b_wet_kk-master
 Then, to create the boot.img:
 ./pack_bootimage.sh
 
+wiko
+==============
+./mk -o=TARGET_BUILD_VARIANT=user wiko new k
