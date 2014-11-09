@@ -459,15 +459,9 @@ static struct platform_driver g_stIMX091AF_Driver = {
     }
 };
 
-static struct platform_device actuator_dev5 = {
-	.name		  = "lens_actuator5",
-	.id		  = -1,
-};
-
 static int __init IMX091AF_i2C_init(void)
 {
     i2c_register_board_info(LENS_I2C_BUSNUM, &kd_lens_dev, 1);
-    platform_device_register(&actuator_dev5);	
     if(platform_driver_register(&g_stIMX091AF_Driver)){
         IMX091AFDB("failed to register IMX091AF driver\n");
         return -ENODEV;

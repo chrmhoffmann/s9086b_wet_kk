@@ -459,15 +459,9 @@ static struct platform_driver g_stOV12830AF_Driver = {
     }
 };
 
-static struct platform_device actuator_dev3 = {
-	.name		  = "lens_actuator3",
-	.id		  = -1,
-};
-
 static int __init OV12830AF_i2C_init(void)
 {
     i2c_register_board_info(LENS_I2C_BUSNUM, &kd_lens_dev, 1);
-    platform_device_register(&actuator_dev3);
     if(platform_driver_register(&g_stOV12830AF_Driver)){
         OV12830AFDB("failed to register OV12830AF driver\n");
         return -ENODEV;
