@@ -21,7 +21,7 @@ static struct i2c_board_info __initdata kd_lens_dev={ I2C_BOARD_INFO("IMX135AF",
 #define IMX135AF_DRVNAME "IMX135AF"
 #define IMX135AF_VCM_WRITE_ID           0x18
 
-#define IMX135AF_DEBUG
+#define IMX135AF_DEBUG 1
 #ifdef IMX135AF_DEBUG
 #define IMX135AFDB printk
 #else
@@ -165,7 +165,7 @@ inline static int moveIMX135AF(unsigned long a_u4Position)
     g_u4TargetPosition = a_u4Position;
     spin_unlock(&g_IMX135AF_SpinLock);	
 
-    //IMX135AFDB("[IMX135AF] move [curr] %d [target] %d\n", g_u4CurrPosition, g_u4TargetPosition);
+    IMX135AFDB("[IMX135AF] move [curr] %d [target] %d\n", g_u4CurrPosition, g_u4TargetPosition);
 
             spin_lock(&g_IMX135AF_SpinLock);
             //g_sr = 3;
@@ -497,7 +497,7 @@ static struct platform_driver g_stIMX135AF_Driver = {
     .suspend	= IMX135AF_suspend,
     .resume	= IMX135AF_resume,
     .driver		= {
-        .name	= "lens_actuator1",
+        .name	= "lens_actuator",
         .owner	= THIS_MODULE,
     }
 };

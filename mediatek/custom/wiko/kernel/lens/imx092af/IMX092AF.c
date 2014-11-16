@@ -454,7 +454,7 @@ static struct platform_driver g_stIMX092AF_Driver = {
     .suspend	= IMX092AF_suspend,
     .resume	= IMX092AF_resume,
     .driver		= {
-        .name	= "lens_actuator6",
+        .name	= "lens_actuator2",
         .owner	= THIS_MODULE,
     }
 };
