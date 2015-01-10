@@ -476,6 +476,112 @@ refine_MFB(RAWIspCamInfo const& rCamInfo, IspNvramRegMgr const& rIspRegMgr, ISP_
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+EIndex_CCM_T
+IspTuningCustom::
+evaluate_CCM_index(RAWIspCamInfo const& rCamInfo)
+{
+    MY_LOG("%s()\n", __FUNCTION__);
+    
+    MY_LOG(
+        "[+evaluate_CCM_index]"
+        "(eIdx_CCM, i4CCT, i4FluorescentIndex)=(%d, %d, %d)"
+        , rCamInfo.eIdx_CCM
+        , rCamInfo.rAWBInfo.i4CCT
+        , rCamInfo.rAWBInfo.i4FluorescentIndex);
+
+    EIndex_CCM_T eIdx_CCM_new = rCamInfo.eIdx_CCM;
+
+//    -----------------|---|---|--------------|---|---|------------------
+//                                THA TH1 THB              THC TH2  THD
+
+    MINT32 const THA = 3318;
+    MINT32 const TH1 = 3484;
+    MINT32 const THB = 3667;
+    MINT32 const THC = 4810;
+    MINT32 const TH2 = 5050;
+    MINT32 const THD = 5316;
+    MINT32 const F_IDX_TH1 = 25;
+    MINT32 const F_IDX_TH2 = -25;
+
+    switch  (rCamInfo.eIdx_CCM)
+    {
+    case eIDX_CCM_TL84:
+        if  ( rCamInfo.rAWBInfo.i4CCT < THB )
+        {
+            eIdx_CCM_new = eIDX_CCM_TL84;
+        }
+        else if ( rCamInfo.rAWBInfo.i4CCT < THD )
+        {
+            if  ( rCamInfo.rAWBInfo.i4FluorescentIndex < F_IDX_TH2 )
+                eIdx_CCM_new = eIDX_CCM_CWF;
+            else 
+                eIdx_CCM_new = eIDX_CCM_TL84;
+        }
+        else
+        {
+            eIdx_CCM_new = eIDX_CCM_D65;
+        }
+        break;
+    case eIDX_CCM_CWF:
+        if  ( rCamInfo.rAWBInfo.i4CCT < THA )
+        {
+            eIdx_CCM_new = eIDX_CCM_TL84;
+        }
+        else if ( rCamInfo.rAWBInfo.i4CCT < THD )
+        {
+            if  ( rCamInfo.rAWBInfo.i4FluorescentIndex > F_IDX_TH1 )
+                eIdx_CCM_new = eIDX_CCM_TL84;
+            else 
+                eIdx_CCM_new = eIDX_CCM_CWF;
+        }
+        else 
+        {
+            eIdx_CCM_new = eIDX_CCM_D65;
+        }
+        break;
+    case eIDX_CCM_D65:
+        if  ( rCamInfo.rAWBInfo.i4CCT > THC )
+        {
+	        eIdx_CCM_new = eIDX_CCM_D65;
+        } 
+        else if ( rCamInfo.rAWBInfo.i4CCT > TH1 )
+        {
+            if(rCamInfo.rAWBInfo.i4FluorescentIndex > F_IDX_TH2)
+                eIdx_CCM_new = eIDX_CCM_TL84;
+            else 
+                eIdx_CCM_new = eIDX_CCM_CWF;
+        }
+        else 
+        {
+            eIdx_CCM_new = eIDX_CCM_TL84;
+        }
+        break;
+    }
+
+    if  ( rCamInfo.eIdx_CCM != eIdx_CCM_new )
+    {
+        MY_LOG(
+            "[-evaluate_CCM_index] CCM Idx(old,new)=(%d,%d)"
+            , rCamInfo.eIdx_CCM, eIdx_CCM_new
+        );
+    }
+
+    return  eIdx_CCM_new;
+}
+
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+MBOOL
+IspTuningCustom::
+is_to_invoke_dynamic_ccm(RAWIspCamInfo const& rCamInfo)
+{
+    return MTRUE;
+}
+
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 EIndex_PCA_LUT_T
 IspTuningCustom::
 evaluate_PCA_LUT_index(RAWIspCamInfo const& rCamInfo)

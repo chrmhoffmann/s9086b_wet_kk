@@ -1201,7 +1201,7 @@ static void ap3220_eint_func(void)
 //	APS_ERR("debug ap3220_eint_func!");
 //Ivan	
 	if (g_emu_int == 1)
-	    mt_eint_mask(CUST_EINT_ALS_NUM);	
+	    mt_eint_mask(CUST_EINT_ALS_NUM);
 	schedule_work(&obj->eint_work);
 }
 
@@ -1221,7 +1221,7 @@ int ap3220_setup_eint(struct i2c_client *client)
 	mt_eint_set_hw_debounce(CUST_EINT_ALS_NUM, CUST_EINT_ALS_DEBOUNCE_CN);
 	mt65xx_eint_registration(CUST_EINT_ALS_NUM, CUST_EINT_ALS_DEBOUNCE_EN, CUST_EINT_ALS_POLARITY, ap3220_eint_func, 0);
 
-	mt_eint_unmask(CUST_EINT_ALS_NUM);  
+	mt_eint_unmask(CUST_EINT_ALS_NUM);
     return 0;
 }
 /*-------------------------------MISC device related------------------------------------------*/

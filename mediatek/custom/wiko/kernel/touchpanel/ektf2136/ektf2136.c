@@ -177,11 +177,6 @@ static struct tpd_driver_t tpd_device_driver =
     .suspend = tpd_suspend,
     .resume = tpd_resume,
     .tpd_have_button = 1,
-	.tpd_x_res = TPD_CUST_RES_X,
-	.tpd_y_res = TPD_CUST_RES_Y,	//including touch area
-    .tpd_get_fw_version = ektf2136_get_fw_version_stored,
-	.tpd_get_vendor_version = ektf2136_get_vendor_version_stored,
-
 };
 
 

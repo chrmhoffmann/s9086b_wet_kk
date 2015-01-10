@@ -44,38 +44,11 @@ extern PFUNC_GETLENSDEFAULT pDummy_getDefaultData;
 extern PFUNC_GETLENSDEFAULT pSensorDrive_getDefaultData;
 #endif
 
-#if defined(FM50AF)
-extern PFUNC_GETLENSDEFAULT pFM50AF_getDefaultData;
-#endif
-
-
-#if defined(OV8825AF)
-extern PFUNC_GETLENSDEFAULT pOV8825AF_getDefaultData;
-#endif
-
-#if defined(OV8830AF)
-extern PFUNC_GETLENSDEFAULT pOV8830AF_getDefaultData;
-#endif
-
-#if defined(OV8831AF)
-extern PFUNC_GETLENSDEFAULT pOV8831AF_getDefaultData;
-#endif
-
-#if defined(OV12830AF)
-extern PFUNC_GETLENSDEFAULT pOV12830AF_getDefaultData;
-#endif
-
 #if defined(IMX135AF)
 extern PFUNC_GETLENSDEFAULT pIMX135AF_getDefaultData;
 #endif
 
-#if defined(IMX091AF)
-extern PFUNC_GETLENSDEFAULT pIMX091AF_getDefaultData;
-#endif
 
-#if defined(IMX092AF)
-extern PFUNC_GETLENSDEFAULT pIMX092AF_getDefaultData;
-#endif
 
 MSDK_LENS_INIT_FUNCTION_STRUCT LensList[MAX_NUM_OF_SUPPORT_LENS] =
 {
@@ -87,30 +60,8 @@ MSDK_LENS_INIT_FUNCTION_STRUCT LensList[MAX_NUM_OF_SUPPORT_LENS] =
     //  for backup lens, need assign correct SensorID
     //{OV5642_SENSOR_ID, SENSOR_DRIVE_LENS_ID, "kd_camera_hw", pSensorDrive_getDefaultData},
 #endif
-
-#if defined(OV8825AF)
-		{OV8825_SENSOR_ID, OV8825AF_LENS_ID, "OV8825AF", pOV8825AF_getDefaultData},
-#endif
-#if defined(OV8830AF)
-		{OV8830_SENSOR_ID, OV8830AF_LENS_ID, "OV8830AF", pOV8830AF_getDefaultData},
-#endif
-#if defined(OV8831AF)
-		{OV8831_SENSOR_ID, OV8831AF_LENS_ID, "OV8831AF", pOV8831AF_getDefaultData},
-#endif
-#if defined(OV12830AF)
-		{OV12830_SENSOR_ID, OV12830AF_LENS_ID, "OV12830AF", pOV12830AF_getDefaultData},
-#endif
 #if defined(IMX135AF)
 		{IMX135_SENSOR_ID, IMX135AF_LENS_ID, "IMX135AF", pIMX135AF_getDefaultData},
-#endif
-#if defined(IMX091AF)
-		{IMX091MIPI_SENSOR_ID, IMX091AF_LENS_ID, "IMX091AF", pIMX091AF_getDefaultData},
-#endif
-#if defined(IMX092AF)
-		{IMX092MIPI_SENSOR_ID, IMX092AF_LENS_ID, "IMX092AF", pIMX092AF_getDefaultData},
-#endif
-#if defined(FM50AF)
-	{DUMMY_SENSOR_ID, FM50AF_LENS_ID, "FM50AF", pFM50AF_getDefaultData},
 #endif
 
     //  for new added lens, need assign correct SensorID

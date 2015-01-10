@@ -77,6 +77,9 @@ getAEParam()
         TRUE,                // bSkipAEinBirghtRange;    
         TRUE,                // bPreAFLockAE
         TRUE,                // bStrobeFlarebyCapture
+        TRUE,                // bEnableFaceAE
+        TRUE,                // bEnableMeterAE
+        TRUE,                // b4FlarMaxStepGapLimitEnable
         256,                  // u4BackLightStrength : strength of backlight condtion
         256,                  // u4OverExpStrength : strength of anti over exposure
         256,                  // u4HistStretchStrength : strength of  histogram stretch
@@ -116,10 +119,18 @@ getAEParam()
  
         40,                     // uMeteringYLowBound;
         50,                     // uMeteringYHighBound;
+        40,                     // uFaceYLowBound
+        50,                     // uFaceYHighBound
+          3,                     //uFaceCentralWeight
         80,                     // uMeteringYLowSkipRatio : metering area min Y value to skip AE
         120,                   // uMeteringYHighSkipRatio : metering area max Y value to skip AE
         120,                   // u4MeteringStableMax;    // for metering stable using. 100 means the stable point.
         80,                    // u4MeteringStableMin;    // for metering stable using. 100 means the stable point.
+        79,                     // u4MinYLowBound;        // metering and face boundary min Y value
+      256,                     // u4MaxYHighBound;      // metering and face boundary max Y value
+        10,                     // u4MinCWRecommend;    // mini target value
+      235,                     // u4MaxCWRecommend;    // max target value
+      -50,                     // iMiniBVValue;               // mini BV value.
         2,                      // uAEShutterDelayCycle;         // for AE smooth used.
         2,                      // uAESensorGainDelayCycleWShutter;
         1,                      // uAESensorGainDelayCycleWOShutter;
@@ -129,6 +140,12 @@ getAEParam()
         96,                   // u4FlareStdThrHigh             // flare std high
         48,                     // u4FlareStdThrLow             // flare std low
         0,                     // u4PrvCapFlareDiff
+
+        4,                      // u4FlareMaxStepGap_Fast
+        0,                      // u4FlareMaxStepGap_Slow
+        1800,                   // u4FlarMaxStepGapLimitBV
+        0,                      // u4FlareAEStableCount
+
     };
 
     static strWeightTable  g_Weight_Matrix =
@@ -331,6 +348,78 @@ getAEParam()
         { 30,  800,   -11}, //    2.5~3      move decrease 30  index
     };
 
+    // total 24 sets
+    static strAEMOVE  g_AETrackingMoveTable[] =
+    {
+        {-20,   17,    20}, //   mean below -2.5  move increase 25 index
+        {-20,   25,    15}, //   -2.5~-2  move increase 20 index
+        {-15,   33,    10}, //   -2~-1.6
+        {-15,   40,    6}, //   -1.6~-1.3
+        {-10,   50,    4}, //   -1.3~-1
+        { -8,   57,     3}, //   -1~-0.8
+        { -5,   71,     2}, //   -0.8~-0.5
+        { -4,   75,     1}, //   -0.5~-0.4
+        { -3,   81,     1}, //   -0.4~-0.3
+        { -1,   90,     1}, //   -0.3~-0.1
+        {   0,  100,     0}, //   -0.1~0
+        {   1,  110,     0}, //     0~0.1
+        {   2,  114,    -1}, //    0.1~0.2       move decrease 1 index
+        {   3,  123,    -1}, //    0.2~0.3
+        {   4,  131,    -1}, //    0.3~0.4
+        {   5,  141,    -2}, //    0.4~0.5
+        {   7,  162,    -2}, //    0.5~0.7
+        {   9,  186,    -3}, //    0.7~0.9
+        { 10,  200,   -4}, //    0.9~1.0
+        { 13,  246,   -4}, //    1.0~1.3
+        { 16,  303,   -6}, //    1.3~1.6
+        { 20,  400,   -7}, //    1.6~2       move decrease 10  index
+        { 25,  566,   -9}, //    2~2.5       move decrease 20  index
+        { 30,  800,   -11}, //    2.5~3      move decrease 30  index
+    };
+
+    static strAEMovingRatio  g_AEMoveRatio = {
+            100, //u4SpeedUpRatio
+            100, //u4GlobalRatio
+            230, //u4Bright2TargetEnd
+            20,   //u4Dark2TargetStart
+            90, //u4B2TEnd
+            40,  //u4B2TStart
+            30,  //u4D2TEnd
+            80,  //u4D2TStart
+    };
+
+    static strAEMovingRatio  g_AEVideoMoveRatio = {
+            100, //u4SpeedUpRatio
+            100, //u4GlobalRatio
+            220,  //u4Bright2TargetEnd
+            10,    //u4Dark2TargetStart
+            40,   //u4B2TEnd
+            10,   //u4B2TStart
+            10,   //u4D2TEnd
+            60,   //u4D2TStart
+    };
+
+    static strAEMovingRatio  g_AEFaceMoveRatio = {
+            100, //u4SpeedUpRatio
+            100, //u4GlobalRatio
+            220,  //u4Bright2TargetEnd
+            10,    //u4Dark2TargetStart
+            10,   //u4B2TEnd
+            5,   //u4B2TStart
+            5,   //u4D2TEnd
+            10,   //u4D2TStart
+    };
+
+    static strAEMovingRatio  g_AETrackingMoveRatio = {
+            100, //u4SpeedUpRatio
+            100, //u4GlobalRatio
+            220,  //u4Bright2TargetEnd
+            10,    //u4Dark2TargetStart
+            10,   //u4B2TEnd
+            5,   //u4B2TStart
+            5,   //u4D2TEnd
+            10,   //u4D2TStart
+    };
     // for AE limiter
     static strAELimiterTable g_AELimiterDataTable = 
     {
@@ -386,8 +475,18 @@ getAEParam()
         g_AEMoveTable,
         g_AEVideoMoveTable,
         g_AEFaceMoveTable,
+        g_AETrackingMoveTable,
         g_AELimiterDataTable,
         g_VdoDynamicFpsTable,
+
+        // v1.2
+        FALSE,              // bOldAESmooth
+        TRUE,               // bEnableSubPreIndex
+        0,                      // u4VideoLPFWeight; // 0~23
+        &g_AEMoveRatio,         // *pAEMovingRatio;
+        &g_AEVideoMoveRatio,    // *pAEVideoMovingRatio;
+        &g_AEFaceMoveRatio,     // *pAEFaceMovingRatio;
+        &g_AETrackingMoveRatio, // *pAETrackingMovingRatio;
     };
 
     return strAEInitPara;
@@ -410,4 +509,57 @@ isAEEnabled()
 {
     return MTRUE;
 }
+
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+const MINT32*
+getAEActiveCycle(MBOOL bVideMode)
+{
+    if(bVideMode == MTRUE) {
+        // Video mode AAA cycle
+        static MINT32 i4AEVideoActiveCycle[AE_CYCLE_NUM] =
+        {
+            AE_CYCLE_ALGO_CONFIGURE,    // use I2C
+            AE_CYCLE_FLARE,                      // use I2C, flare
+            AE_CYCLE_FLARE,
+            AE_CYCLE_ALGO_CONFIGURE,    // use I2C
+            AE_CYCLE_FLARE,                      // use I2C, flare
+            AE_CYCLE_FLARE,
+        };
+
+        return (&i4AEVideoActiveCycle[0]);        
+    } else {
+        // Default AAA cycle
+        static MINT32 i4AEPreviewActiveCycle[AE_CYCLE_NUM] =
+        {
+            AE_CYCLE_ALGO_CONFIGURE|AE_CYCLE_FLARE,    // use I2C
+            AE_CYCLE_FLARE,                      // use I2C, flare
+            AE_CYCLE_FLARE,
+            AE_CYCLE_ALGO_CONFIGURE|AE_CYCLE_FLARE,    // use I2C
+            AE_CYCLE_FLARE,                      // use I2C, flare
+            AE_CYCLE_FLARE,
+        };
+
+        return (&i4AEPreviewActiveCycle[0]);
+    }
+}
+
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+MINT32
+getAECycleNum()
+{
+    return AE_CYCLE_NUM;
+}
+
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+MINT32 getAEHighFPSThreshold()
+{
+    return AE_HIGH_FPS_THRES;
+}
+
 

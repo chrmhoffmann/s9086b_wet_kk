@@ -56,7 +56,7 @@ static struct acc_hw bma250_cust_acc_hw = {
     .power = bma250_cust_acc_power,        
 };
 /*---------------------------------------------------------------------------*/
-struct acc_hw* bma250_get_cust_acc_hw(void) 
+struct acc_hw* get_cust_acc_hw(void) 
 {
     return &bma250_cust_acc_hw;
 }
