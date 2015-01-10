@@ -547,7 +547,6 @@ void fan5405_hw_init(void)
     fan5405_config_interface_liao(0x06,0x74); // set ISAFE
     printk("[fan5405_hw_init] (0x06,0x74)\n");
 #else
- 
     if(g_enable_high_vbat_spec == 1)
     {
         if(g_pmic_cid == 0x1020)

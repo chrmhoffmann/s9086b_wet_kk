@@ -32,7 +32,7 @@ FTABLE_SCENE_INDEP()
     }
 #endif
     //==========================================================================
-#if     defined(CUSTOM_FLASHLIGHT_TYPE_constant_flashlight)
+#if     defined(CUSTOM_FLASHLIGHT_TYPE_constant_flashlight) || defined (CUSTOM_FLASHLIGHT_TYPE_sgm3780_flashlight)
     if  (NSSensorType::eSensorType_RAW==u4SensorType)
     {
     FTABLE_CONFIG_AS_TYPE_OF_DEFAULT_VALUES(
@@ -132,7 +132,7 @@ FTABLE_SCENE_INDEP()
     }
 #endif
     //==========================================================================
-#if     defined(CUSTOM_FLASHLIGHT_TYPE_constant_flashlight)
+#if     defined(CUSTOM_FLASHLIGHT_TYPE_constant_flashlight) || defined (CUSTOM_FLASHLIGHT_TYPE_sgm3780_flashlight)
     if  (NSSensorType::eSensorType_RAW==u4SensorType)
     {
     FTABLE_CONFIG_AS_TYPE_OF_DEFAULT_VALUES(

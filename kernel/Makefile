@@ -4,9 +4,6 @@ SUBLEVEL = 67
 EXTRAVERSION =
 NAME = Saber-toothed Squirrel
 
-# Temp hack for mtk modules built        
-export TARGET_BUILD_VARIANT = user
-
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
 # More info can be located in ./README

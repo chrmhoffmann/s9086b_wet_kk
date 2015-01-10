@@ -520,6 +520,12 @@ static int hwmsen_enable(struct hwmdev_object *obj, int sensor, int enable)
 	
 	if(enable == 1)
 	{
+//{@for mt6582 blocking issue work around		
+		if(sensor == 7){
+			HWM_LOG("P-sensor disable LDO low power\n");
+			pmic_ldo_suspend_enable(0);
+			}
+//@}
 		enable_again = true;
 		obj->active_data_sensor |= sensor_type;
 		if((obj->active_sensor & sensor_type) == 0)	// no no-data active
@@ -554,6 +560,13 @@ static int hwmsen_enable(struct hwmdev_object *obj, int sensor, int enable)
 	}
 	else
 	{
+//{@for mt6582 blocking issue work around
+		if(sensor == 7){
+			HWM_LOG("P-sensor enable LDO low power\n");
+			pmic_ldo_suspend_enable(1);
+
+			}
+//@}
 		obj->active_data_sensor &= ~sensor_type;
 		if((obj->active_sensor & sensor_type) == 0)	// no no-data active
 		{
